@@ -1,0 +1,22 @@
+[package]
+name = "meo-wifi"
+version = "1.0.0"
+edition = "2021"
+authors = ["TIago Marques <tyimarques@gmail.com>"]
+repository = "https://github.com/timarques/meo-wifi-rs"
+
+[dependencies]
+ureq = { version = "2.10.1", features = ["json"] }
+aes = "0.8.4"
+base64 = "0.22.1"
+cbc = "0.1.2"
+lazy-regex = "3.3.0"
+pbkdf2 = "0.12.2"
+sha1 = "0.10.6"
+urlencoding = "2.1.3"
+serde_json = "1.0.128"
+
+[profile.release]
+strip = "symbols"
+opt-level = 3
+lto = true
