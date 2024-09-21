@@ -4,7 +4,7 @@ use super::error::Error;
 use crate::log;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ConnectionKind {
+enum Type {
     Loopback,
     Wifi,
     Ethernet,
@@ -14,7 +14,7 @@ enum ConnectionKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Connection {
     name: String,
-    kind: ConnectionKind,
+    r#type: Type,
     active: bool
 }
 
@@ -32,26 +32,26 @@ impl Nmcli {
         let output = Command::new("nmcli")
             .args(args)
             .output()?;
-    
+
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             return Err(IoError::new(IoErrorKind::Other, format!("nmcli command failed: {}", stderr)));
         }
-    
+
         String::from_utf8(output.stdout)
             .map(|s| s.trim().to_string())
             .map_err(|e| IoError::new(IoErrorKind::InvalidData, e))
     }
 
-    fn parse_network_type(type_str: &str) -> ConnectionKind {
+    fn parse_network_type(type_str: &str) -> Type {
         if type_str.contains("ethernet") {
-            ConnectionKind::Ethernet
+            Type::Ethernet
         } else if type_str.contains("wireless") {
-            ConnectionKind::Wifi
+            Type::Wifi
         } else if type_str.contains("loopback") {
-            ConnectionKind::Loopback
+            Type::Loopback
         } else {
-            ConnectionKind::Unknown
+            Type::Unknown
         }
     }
 
@@ -64,8 +64,8 @@ impl Nmcli {
                 None
             } else {
                 Some(Connection {
-                    name: parts[0].to_string(), 
-                    kind: Self::parse_network_type(parts[1]),
+                    name: parts[0].to_string(),
+                    r#type: Self::parse_network_type(parts[1]),
                     active: parts[2] == "yes"
                 })
             }
@@ -86,8 +86,8 @@ impl super::Trait for Nmcli {
                     .into_iter()
                     .filter(|conn| conn.active);
                 iter
-                    .find(|conn| conn.kind == ConnectionKind::Ethernet)
-                    .or_else(|| iter.find(|conn| conn.kind == ConnectionKind::Wifi))
+                    .find(|conn| conn.r#type == Type::Ethernet)
+                    .or_else(|| iter.find(|conn| conn.r#type == Type::Wifi))
                     .map(|conn| conn.name.clone())
         })
     }
@@ -122,11 +122,11 @@ impl super::Trait for Nmcli {
         }
 
         let connection = connection.ok_or(Error::Unavailable)?;
-        if connection.kind == ConnectionKind::Wifi {
+        if connection.r#type == Type::Wifi {
             Self::execute(&["radio", "wifi", "on"])?;
         }
         Self::execute(&["connection", "up", &connection.name])?;
-    
+
         Ok(())
     }
 
@@ -141,5 +141,5 @@ impl super::Trait for Nmcli {
             .map(|_| ())
             .map_err(|e| Error::from(e))
     }
-    
+
 }
