@@ -10,9 +10,10 @@ pub struct Oneshot<'a, C: Connections, S: Session> {
 }
 
 impl<'a, C, S> Oneshot<'a, C, S>
-where C: Connections, S: Session
+where
+    C: Connections,
+    S: Session,
 {
-
     pub fn new(connections: &'a C, session: &'a S, target: &'a str) -> Self {
         Self {
             connections,
@@ -22,22 +23,20 @@ where C: Connections, S: Session
     }
 
     fn setup_connection(&self) -> Result<(), Error> {
-        // Disconnect the primary connection before attempting to connect to the target network.
-        // This ensures that nmcli selects the correct network device for the connection.
         if let Some(main_connection) = self.connections.active() {
             if main_connection != self.target {
-                log::warn("connection not main");
+                log::warn("Disconnecting non-target main connection");
                 self.connections.disconnect(&main_connection)?;
-                log::info("main connection disconnected");
+                log::info("Main connection disconnected");
             }
         }
 
         if self.connections.is_connected(self.target) {
-            log::info("connection already active");
+            log::info("Target connection already active");
         } else {
-            log::warn("connection not active");
-            self.connections.connect(&self.target)?;
-            log::info("connection active");
+            log::warn("Target connection not active, connecting");
+            self.connections.connect(self.target)?;
+            log::info("Target connection activated");
         }
 
         Ok(())
@@ -45,22 +44,23 @@ where C: Connections, S: Session
 
     fn setup_session(&self) -> Result<(), Error> {
         if self.session.is_logged() {
-            log::info("session active");
+            log::info("Session already active");
         } else {
-            log::warn("session not active");
+            log::warn("Session not active, logging in");
             self.session.login()?;
-            log::info("session logged in");
+            log::info("Session logged in successfully");
         }
+
         Ok(())
     }
-
 }
 
 impl<C, S> Trait for Oneshot<'_, C, S>
-where C: Connections, S: Session
+where
+    C: Connections,
+    S: Session,
 {
     fn execute(&self) -> Result<(), Error> {
-        self.setup_connection()?;
-        self.setup_session()
+        self.setup_connection().and_then(|_| self.setup_session())
     }
 }

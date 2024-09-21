@@ -18,7 +18,6 @@ struct Connection {
     active: bool
 }
 
-#[cfg(target_os = "linux")]
 #[derive(Debug, Clone)]
 pub struct Nmcli {}
 

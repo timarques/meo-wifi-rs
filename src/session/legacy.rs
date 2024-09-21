@@ -18,21 +18,21 @@ impl Legacy {
         if !email_regex.is_match(username) {
             return Err(Error::InvalidEmail);
         }
-    
+
         let has_lowercase = || password.chars().any(|c| c.is_ascii_lowercase());
         let has_uppercase = || password.chars().any(|c| c.is_ascii_uppercase());
         let has_number = || password.chars().any(|c| c.is_ascii_digit());
         if password.len() < 8 || !has_lowercase() || !has_uppercase() || !has_number() {
             return Err(Error::InvalidPassword);
         }
-    
+
         Ok(())
     }
 
     pub fn new(username: &str, password: &str) -> Result<Self, Error> {
         Self::validate_credentials(username, password)?;
-        Ok(Self { 
-            username: username.to_string(), 
+        Ok(Self {
+            username: username.to_string(),
             password: password.to_string(),
         })
     }
@@ -90,17 +90,14 @@ impl super::Trait for Legacy {
                 r
                     .into_json::<serde_json::Value>()
                     .ok()
-                    .and_then(|v| {
-                        println!("{:?}", v);
-                        v.get("LoggedOn").and_then(|v| v.as_bool())
-                    })
+                    .and_then(|v| v.get("LoggedOn").and_then(|v| v.as_bool()))
             }).unwrap_or(false)
     }
 
     fn login(&self) -> Result<(), Error> {
         let url = format!(
-            "https://servicoswifi.apps.meo.pt/HotspotConnection.svc/Login?username={}&password={}&navigatorLang=en&callback=", 
-            urlencoding::encode(&self.username), 
+            "https://servicoswifi.apps.meo.pt/HotspotConnection.svc/Login?username={}&password={}&navigatorLang=en&callback=",
+            urlencoding::encode(&self.username),
             urlencoding::encode(&self.encrypt_password())
         );
 
