@@ -22,6 +22,16 @@ where C: Connections, S: Session
     }
 
     fn setup_connection(&self) -> Result<(), Error> {
+        // Disconnect the primary connection before attempting to connect to the target network.
+        // This ensures that nmcli selects the correct network device for the connection.
+        if let Some(main_connection) = self.connections.active() {
+            if main_connection != self.target {
+                log::warn("connection not main");
+                self.connections.disconnect(&main_connection)?;
+                log::info("main connection disconnected");
+            }
+        }
+
         if self.connections.is_connected(self.target) {
             log::info("connection already active");
         } else {
@@ -30,13 +40,6 @@ where C: Connections, S: Session
             log::info("connection active");
         }
 
-        if let Some(main_connection) = self.connections.active() {
-            if main_connection != self.target {
-                log::warn("connection not main");
-                self.connections.disconnect(&main_connection)?;
-                log::info("main connection disconnected");
-            }
-        }
         Ok(())
     }
 
@@ -50,7 +53,7 @@ where C: Connections, S: Session
         }
         Ok(())
     }
-    
+
 }
 
 impl<C, S> Trait for Oneshot<'_, C, S>
